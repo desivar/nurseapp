@@ -20,7 +20,7 @@ const initDB = async () => {
     console.log('Connecting to MongoDB...');
     
     // Connect with authentication
-    await mongoose.connect(process.env.MONGOOB_URL, {
+    await mongoose.connect(process.env.MONGODB_URL, {
       auth: {
         username: process.env.DB_USER,
         password: process.env.DB_PASSWORD
