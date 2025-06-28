@@ -13,6 +13,9 @@ import Shifts from './pages/Shifts';
 import Patients from './pages/Patients';
 import Profile from './pages/Profile';
 import PrivateRoute from './components/auth/PrivateRoute';
+import Login from './components/auth/Login';
+import Logout from './components/auth/Logout';
+import AuthCallback from './components/auth/AuthCallback';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +46,9 @@ function App() {
               <div style={{ flexGrow: 1, padding: '24px', marginTop: '64px' }}>
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/logout" element={<Logout />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                   <Route path="/duties" element={<PrivateRoute><Duties /></PrivateRoute>} />
                   <Route path="/shifts" element={<PrivateRoute><Shifts /></PrivateRoute>} />
