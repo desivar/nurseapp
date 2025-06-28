@@ -16,7 +16,7 @@ const patientSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other', 'unknown'],
+    enum: ['male', 'female'], // Modified enum to only include 'male' and 'female'
     required: true
   },
   medicalRecordNumber: {
@@ -72,11 +72,11 @@ patientSchema.virtual('age').get(function() {
   const birthDate = new Date(this.dateOfBirth);
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   return age;
 });
 
@@ -88,7 +88,7 @@ patientSchema.pre('save', function(next) {
 
 module.exports = mongoose.model('Patient', patientSchema);
 /*******************************
- *         INDEXES             *
+ * INDEXES            *
  *******************************/
 //pientSchema.index({ medicalRecordNumber: 1 }, );
 patientSchema.index({ lastName: 1, firstName: 1 });
