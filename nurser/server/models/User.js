@@ -91,7 +91,7 @@ userSchema.methods.verifyPassword = async function(candidatePassword) {
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ licenseNumber: 1 }, { unique: true, sparse: true });
 userSchema.index({ role: 1, isActive: 1 });
-userSchema.index({ githubId: 1 }, { unique: true, sparse: true });
+//userSchema.index({ githubId: 1 }, { unique: true, sparse: true });
 userSchema.index({ firstName: 1, lastName: 1 }); // For name searches
 
 module.exports = mongoose.model('User', userSchema);
