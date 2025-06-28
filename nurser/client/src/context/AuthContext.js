@@ -6,64 +6,109 @@ import { loginWithGitHub, logout as apiLogout, verifyToken } from '../services/a
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState({
+    user: null,
+    token: localStorage.getItem('token'),
+    loading: true,
+    error: null
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verifyUser = async () => {
+    const verifyUserToken = async () => {
       try {
-        if (token) {
-          const isValid = await verifyToken(token);
+        if (authState.token) {
+          const isValid = await verifyToken(authState.token);
           if (isValid) {
-            const decoded = jwtDecode(token);
-            setUser(decoded);
+            const decoded = jwtDecode(authState.token);
+            setAuthState(prev => ({
+              ...prev,
+              user: decoded,
+              loading: false,
+              error: null
+            }));
           } else {
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
+            clearAuth();
           }
+        } else {
+          setAuthState(prev => ({ ...prev, loading: false }));
         }
       } catch (error) {
-        console.error('Token verification error:', error);
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
+        console.error('Auth verification failed:', error);
+        clearAuth();
+        setAuthState(prev => ({
+          ...prev,
+          error: 'Session verification failed',
+          loading: false
+        }));
       }
     };
 
-    verifyUser();
-  }, [token]);
+    verifyUserToken();
+  }, [authState.token]);
+
+  const clearAuth = () => {
+    localStorage.removeItem('token');
+    setAuthState({
+      user: null,
+      token: null,
+      loading: false,
+      error: null
+    });
+  };
 
   const login = async () => {
-    await loginWithGitHub();
+    try {
+      setAuthState(prev => ({ ...prev, loading: true }));
+      await loginWithGitHub();
+    } catch (error) {
+      setAuthState(prev => ({
+        ...prev,
+        error: 'Login failed',
+        loading: false
+      }));
+    }
   };
 
   const handleGitHubCallback = async (token) => {
-    localStorage.setItem('token', token);
-    setToken(token);
-    navigate('/dashboard');
+    try {
+      localStorage.setItem('token', token);
+      setAuthState(prev => ({
+        ...prev,
+        token,
+        loading: false,
+        error: null
+      }));
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Auth callback failed:', error);
+      clearAuth();
+    }
   };
 
   const logout = async () => {
-    await apiLogout();
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    try {
+      setAuthState(prev => ({ ...prev, loading: true }));
+      await apiLogout();
+      clearAuth();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setAuthState(prev => ({
+        ...prev,
+        error: 'Logout failed',
+        loading: false
+      }));
+    }
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        token, 
-        loading,
-        login, 
-        logout, 
-        handleGitHubCallback 
+    <AuthContext.Provider
+      value={{
+        ...authState,
+        login,
+        logout,
+        handleGitHubCallback
       }}
     >
       {children}
@@ -71,4 +116,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
