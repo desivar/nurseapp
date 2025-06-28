@@ -1,4 +1,5 @@
-// server/initDB.js
+require('dotenv').config(); // This must be at the very top
+
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Patient = require('./models/Patient');
@@ -8,14 +9,20 @@ const bcrypt = require('bcryptjs');
 
 const initDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    // Check if MONGODB_URI is defined
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined in your .env file');
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
     console.log('Connected to MongoDB');
 
     // Clear existing data
-    await User.deleteMany({});
-    await Patient.deleteMany({});
-    await Shift.deleteMany({});
-    await Duty.deleteMany({});
+    await mongoose.connection.db.dropDatabase();
+    console.log('Dropped existing database');
 
     // Create admin user
     const adminPassword = await bcrypt.hash('admin123', 12);
