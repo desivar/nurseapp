@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   githubId: {
     type: String,
-    unique: true,
+
     sparse: true
   },
   username: {
@@ -37,8 +37,8 @@ const userSchema = new mongoose.Schema({
   },
   licenseNumber: {
     type: String,
-    unique: true,
-    sparse: true
+    
+    
   },
   specialization: {
     type: String,
@@ -73,7 +73,7 @@ userSchema.methods.correctPassword = async function(candidatePassword, userPassw
  *         INDEXES             *
  *******************************/
 userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ licenseNumber: 1 }, { unique: true, sparse: true });
+userSchema.index({ licenseNumber: 1 }, );
 userSchema.index({ role: 1, isActive: 1 });
 
 module.exports = mongoose.model('User', userSchema);
