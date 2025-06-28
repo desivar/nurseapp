@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   githubId: {
     type: String,
     unique: true,
-    sparse: true // Allows null values for non-Github users
+    sparse: true
   },
   username: {
     type: String,
@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    select: false // Never return password in queries
+    select: false
   },
   role: {
     type: String,
@@ -57,16 +57,23 @@ const userSchema = new mongoose.Schema({
   updatedAt: Date
 });
 
-// Hash password before saving
+// Middleware (pre-save hooks)
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Method to check password
+// Instance methods
 userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
+
+/*******************************
+ *         INDEXES             *
+ *******************************/
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ licenseNumber: 1 }, { unique: true, sparse: true });
+userSchema.index({ role: 1, isActive: 1 });
 
 module.exports = mongoose.model('User', userSchema);
