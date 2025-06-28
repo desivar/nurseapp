@@ -1,22 +1,20 @@
-// server/models/User.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   githubId: {
     type: String,
-
-    sparse: true
+    sparse: true  // No unique here - will be defined in indexes section
   },
   username: {
     type: String,
     required: true,
-    unique: true
+    unique: true  // Only defined here (not duplicated)
   },
   email: {
     type: String,
-    required: true,
-    unique: true
+    required: true
+    // Removed unique: true - defined in indexes section
   },
   password: {
     type: String,
@@ -36,9 +34,8 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   licenseNumber: {
-    type: String,
-    
-    
+    type: String
+    // No unique/sparse here - defined in indexes section
   },
   specialization: {
     type: String,
@@ -73,7 +70,8 @@ userSchema.methods.correctPassword = async function(candidatePassword, userPassw
  *         INDEXES             *
  *******************************/
 userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ licenseNumber: 1 }, );
+userSchema.index({ licenseNumber: 1 }, { unique: true, sparse: true });
 userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ githubId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('User', userSchema);
