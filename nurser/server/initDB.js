@@ -1,4 +1,4 @@
-require('dotenv').config(); // This must be at the very top
+require('dotenv').config(); // Load environment variables
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
@@ -9,45 +9,40 @@ const bcrypt = require('bcryptjs');
 
 const initDB = async () => {
   try {
-    // Check if MONGODB_URI is defined
+    // Verify MongoDB connection string
     if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in your .env file');
+      throw new Error('MONGODB_URI is missing in .env file');
     }
 
-    await mongoose.connect(process.env.MONGODB_URI:
-    console.log('Connected to MongoDB');
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✓ Connected to MongoDB');
 
     // Clear existing data
     await mongoose.connection.db.dropDatabase();
-    console.log('Dropped existing database');
+    console.log('✓ Database cleared');
 
-    // Create admin user
-    const adminPassword = await bcrypt.hash('admin123', 12);
-    const admin = await User.create({
-      username: 'admin',
-      email: 'admin@hospital.com',
-      password: adminPassword,
-      role: 'admin',
-      firstName: 'Hospital',
-      lastName: 'Admin',
-      licenseNumber: 'ADMIN-001'
-    });
-
-    // Create head nurse
-    const headNursePassword = await bcrypt.hash('nurse123', 12);
-    const headNurse = await User.create({
-      username: 'headnurse',
-      email: 'head.nurse@hospital.com',
-      password: headNursePassword,
-      role: 'head_nurse',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      licenseNumber: 'RN-1001',
-      specialization: 'ICU'
-    });
-
-    // Create regular nurses
-    const nurses = await User.create([
+    // Create users
+    const [admin, headNurse, ...nurses] = await User.create([
+      {
+        username: 'admin',
+        email: 'admin@hospital.com',
+        password: await bcrypt.hash('admin123', 12),
+        role: 'admin',
+        firstName: 'Hospital',
+        lastName: 'Admin',
+        licenseNumber: 'ADMIN-001'
+      },
+      {
+        username: 'headnurse',
+        email: 'head.nurse@hospital.com',
+        password: await bcrypt.hash('nurse123', 12),
+        role: 'head_nurse',
+        firstName: 'Sarah',
+        lastName: 'Johnson',
+        licenseNumber: 'RN-1001',
+        specialization: 'ICU'
+      },
       {
         username: 'nurse1',
         email: 'nurse1@hospital.com',
@@ -165,10 +160,10 @@ const initDB = async () => {
       }
     ]);
 
-    console.log('Database initialized successfully!');
+    console.log('✓ Database initialized successfully!');
     process.exit(0);
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error('✗ Error initializing database:', err.message);
     process.exit(1);
   }
 };
