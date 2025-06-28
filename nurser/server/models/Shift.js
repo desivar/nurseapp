@@ -63,3 +63,8 @@ shiftSchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Shift', shiftSchema);
+/*******************************
+ *         INDEXES             *
+ *******************************/
+shiftSchema.index({ startTime: 1, endTime: 1 });
+shiftSchema.index({ ward: 1, status: 1 });

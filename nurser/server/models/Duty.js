@@ -70,3 +70,9 @@ dutySchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Duty', dutySchema);
+/*******************************
+ *         INDEXES             *
+ *******************************/
+dutySchema.index({ nurse: 1, status: 1 });
+dutySchema.index({ patient: 1 });
+dutySchema.index({ shift: 1 });

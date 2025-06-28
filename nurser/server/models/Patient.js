@@ -87,3 +87,9 @@ patientSchema.pre('save', function(next) {
 });
 
 module.exports = mongoose.model('Patient', patientSchema);
+/*******************************
+ *         INDEXES             *
+ *******************************/
+patientSchema.index({ medicalRecordNumber: 1 }, { unique: true });
+patientSchema.index({ lastName: 1, firstName: 1 });
+patientSchema.index({ status: 1, roomNumber: 1 });
