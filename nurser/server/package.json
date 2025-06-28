@@ -17,6 +17,7 @@
     "express-session": "^1.18.1",
     "mongoose": "^8.16.1",
     "passport": "^0.7.0",
+    "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   }
 }
