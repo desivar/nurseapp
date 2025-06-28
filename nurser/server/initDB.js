@@ -10,8 +10,8 @@ const bcrypt = require('bcryptjs');
 const initDB = async () => {
   try {
     // Verify environment variables
-    if (!process.env.MONGOOB_URL) {
-      throw new Error('MONGOOB_URL is missing in .env file');
+    if (!process.env.MONGODB_URL) {
+      throw new Error('MONGODB_URL is missing in .env file');
     }
     if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
       throw new Error('Database credentials are missing in .env file');
