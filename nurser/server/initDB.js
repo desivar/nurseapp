@@ -1,4 +1,4 @@
-require('dotenv').config(); // Load environment variables
+require('dotenv').config(); // Must be first line
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
@@ -9,40 +9,64 @@ const bcrypt = require('bcryptjs');
 
 const initDB = async () => {
   try {
-    // Verify MongoDB connection string
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is missing in .env file');
+    // Verify environment variables
+    if (!process.env.MONGOOB_URL) {
+      throw new Error('MONGOOB_URL is missing in .env file');
+    }
+    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
+      throw new Error('Database credentials are missing in .env file');
     }
 
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connecting to MongoDB...');
+    
+    // Connect with authentication
+    await mongoose.connect(process.env.MONGOOB_URL, {
+      auth: {
+        username: process.env.DB_USER,
+        password: process.env.DB_PASSWORD
+      },
+      authSource: 'admin'
+    });
     console.log('✓ Connected to MongoDB');
 
-    // Clear existing data
-    await mongoose.connection.db.dropDatabase();
+    // Clear collections individually to avoid permission issues
+    console.log('Clearing existing data...');
+    await User.deleteMany({});
+    await Patient.deleteMany({});
+    await Shift.deleteMany({});
+    await Duty.deleteMany({});
     console.log('✓ Database cleared');
 
-    // Create users
-    const [admin, headNurse, ...nurses] = await User.create([
-      {
-        username: 'admin',
-        email: 'admin@hospital.com',
-        password: await bcrypt.hash('admin123', 12),
-        role: 'admin',
-        firstName: 'Hospital',
-        lastName: 'Admin',
-        licenseNumber: 'ADMIN-001'
-      },
-      {
-        username: 'headnurse',
-        email: 'head.nurse@hospital.com',
-        password: await bcrypt.hash('nurse123', 12),
-        role: 'head_nurse',
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        licenseNumber: 'RN-1001',
-        specialization: 'ICU'
-      },
+    // Create admin user
+    console.log('Creating admin user...');
+    const adminPassword = await bcrypt.hash('admin123', 12);
+    const admin = await User.create({
+      username: 'admin',
+      email: 'admin@hospital.com',
+      password: adminPassword,
+      role: 'admin',
+      firstName: 'Hospital',
+      lastName: 'Admin',
+      licenseNumber: 'ADMIN-001'
+    });
+
+    // Create head nurse
+    console.log('Creating head nurse...');
+    const headNursePassword = await bcrypt.hash('nurse123', 12);
+    const headNurse = await User.create({
+      username: 'headnurse',
+      email: 'head.nurse@hospital.com',
+      password: headNursePassword,
+      role: 'head_nurse',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      licenseNumber: 'RN-1001',
+      specialization: 'ICU'
+    });
+
+    // Create regular nurses
+    console.log('Creating nursing staff...');
+    const nurses = await User.create([
       {
         username: 'nurse1',
         email: 'nurse1@hospital.com',
@@ -66,12 +90,13 @@ const initDB = async () => {
     ]);
 
     // Create patients
+    console.log('Creating patient records...');
     const patients = await Patient.create([
       {
         firstName: 'John',
         lastName: 'Smith',
         dateOfBirth: new Date(1980, 5, 15),
-        gender: 'male',
+        sex: 'male',
         medicalRecordNumber: 'MRN-1001',
         roomNumber: '101A',
         primaryDiagnosis: 'Pneumonia',
@@ -82,7 +107,7 @@ const initDB = async () => {
         firstName: 'Mary',
         lastName: 'Williams',
         dateOfBirth: new Date(1975, 8, 22),
-        gender: 'female',
+        sex: 'female',
         medicalRecordNumber: 'MRN-1002',
         roomNumber: '205B',
         primaryDiagnosis: 'Fractured femur',
@@ -100,6 +125,7 @@ const initDB = async () => {
     ]);
 
     // Create shifts
+    console.log('Creating shift schedules...');
     const now = new Date();
     const shifts = await Shift.create([
       {
@@ -125,6 +151,7 @@ const initDB = async () => {
     ]);
 
     // Create duties
+    console.log('Assigning duties...');
     await Duty.create([
       {
         nurse: nurses[0]._id,
@@ -160,10 +187,13 @@ const initDB = async () => {
       }
     ]);
 
-    console.log('✓ Database initialized successfully!');
+    console.log('\n✓ Database initialized successfully!');
+    console.log('Admin credentials:');
+    console.log(`Username: admin`);
+    console.log(`Password: admin123`);
     process.exit(0);
   } catch (err) {
-    console.error('✗ Error initializing database:', err.message);
+    console.error('\n✗ Error initializing database:', err.message);
     process.exit(1);
   }
 };
