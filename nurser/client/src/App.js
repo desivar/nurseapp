@@ -1,24 +1,61 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { ReactQueryDevtools } from 'react-query/devtools';
+import AuthProvider from './context/AuthContext';
+import Navbar from './components/layout/Navbar';
+import Sidebar from './components/layout/Sidebar';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import Duties from './pages/Duties';
+import Shifts from './pages/Shifts';
+import Patients from './pages/Patients';
+import Profile from './pages/Profile';
+import PrivateRoute from './components/auth/PrivateRoute';
+
+const queryClient = new QueryClient();
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+});
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <div style={{ display: 'flex' }}>
+              <Navbar />
+              <Sidebar />
+              <div style={{ flexGrow: 1, padding: '24px', marginTop: '64px' }}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                  <Route path="/duties" element={<PrivateRoute><Duties /></PrivateRoute>} />
+                  <Route path="/shifts" element={<PrivateRoute><Shifts /></PrivateRoute>} />
+                  <Route path="/patients" element={<PrivateRoute><Patients /></PrivateRoute>} />
+                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                </Routes>
+              </div>
+            </div>
+          </Router>
+        </AuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
