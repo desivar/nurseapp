@@ -72,7 +72,7 @@ app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/patients', require('./routes/patients'));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URL)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
