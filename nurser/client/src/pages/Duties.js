@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { 
-  useQuery,
-  useQueryClient,
-  useMutation
+  useQuery, 
+  useQueryClient, 
+  useMutation 
 } from '@tanstack/react-query';
 import { 
   Box, 
@@ -22,11 +22,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  // DialogActions removed since it's unused
-  Add,
-  Edit,
-  Delete
+  DialogActions
 } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { getDuties, deleteDuty } from '../services/duties';
 import DutyForm from '../components/duties/DutyForm';
 
@@ -40,14 +38,14 @@ const Duties = () => {
     severity: 'success'
   });
 
-  // Fetch duties
-  const { data: duties, isLoading, error } = useQuery({
+  // Fetch duties data
+  const { data: duties, isLoading, isError, error } = useQuery({
     queryKey: ['duties'],
     queryFn: getDuties
   });
 
   // Delete duty mutation
-  const deleteMutation = useMutation({
+  const { mutate: deleteDutyMutation } = useMutation({
     mutationFn: deleteDuty,
     onSuccess: () => {
       queryClient.invalidateQueries(['duties']);
@@ -73,7 +71,7 @@ const Duties = () => {
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this duty?')) {
-      deleteMutation.mutate(id);
+      deleteDutyMutation(id);
     }
   };
 
@@ -98,38 +96,48 @@ const Duties = () => {
   };
 
   if (isLoading) return <CircularProgress />;
-  if (error) return <Alert severity="error">Error loading duties: {error.message}</Alert>;
+  if (isError) return <Alert severity="error">Error loading duties: {error.message}</Alert>;
 
   return (
     <Box>
-      {/* DutyForm dialog/component */}
-      <DutyForm
-        open={openForm}
-        duty={selectedDuty}
-        onClose={handleCloseForm}
-        onSuccess={handleSuccess}
-      />
-      {/* Duties Table */}
-      <TableContainer component={Paper} sx={{ mt: 3 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">Nurse Duties</Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<AddIcon />}
+          onClick={() => setOpenForm(true)}
+        >
+          Add Duty
+        </Button>
+      </Box>
+
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell>Nurse</TableCell>
+              <TableCell>Patient</TableCell>
+              <TableCell>Shift</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {duties && duties.map((duty) => (
-              <TableRow key={duty.id}>
-                <TableCell>{duty.name}</TableCell>
-                <TableCell>{duty.description}</TableCell>
-                <TableCell align="right">
-                  <IconButton color="primary" onClick={() => handleEdit(duty)}>
-                    <Edit />
+            {duties?.map((duty) => (
+              <TableRow key={duty._id}>
+                <TableCell>{duty.nurse?.displayName || 'Unknown'}</TableCell>
+                <TableCell>{duty.patient?.name || 'Unknown'}</TableCell>
+                <TableCell>
+                  {duty.shift?.name} ({new Date(duty.shift?.startTime).toLocaleTimeString()})
+                </TableCell>
+                <TableCell>{duty.status}</TableCell>
+                <TableCell>
+                  <IconButton onClick={() => handleEdit(duty)}>
+                    <EditIcon color="primary" />
                   </IconButton>
-                  <IconButton color="error" onClick={() => handleDelete(duty.id)}>
-                    <Delete />
+                  <IconButton onClick={() => handleDelete(duty._id)}>
+                    <DeleteIcon color="error" />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -137,13 +145,27 @@ const Duties = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedDuty ? 'Edit Duty' : 'Add New Duty'}</DialogTitle>
+        <DialogContent>
+          <DutyForm 
+            duty={selectedDuty} 
+            onSuccess={handleSuccess} 
+            onCancel={handleCloseForm}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseForm}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
