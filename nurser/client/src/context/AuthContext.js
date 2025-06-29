@@ -1,121 +1,105 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { loginWithGitHub, logout as apiLogout, verifyToken } from '../services/auth';
+import api from '../services/api';
 
+// 1. Create Context
 const AuthContext = createContext();
 
+// 2. Create Provider Component
 export const AuthProvider = ({ children }) => {
-  const [authState, setAuthState] = useState({
-    user: null,
-    token: localStorage.getItem('token'),
-    loading: true,
-    error: null
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  // Verify token on initial load
   useEffect(() => {
-    const verifyUserToken = async () => {
+    const verifyToken = async () => {
       try {
-        if (authState.token) {
-          const isValid = await verifyToken(authState.token);
-          if (isValid) {
-            const decoded = jwtDecode(authState.token);
-            setAuthState(prev => ({
-              ...prev,
-              user: decoded,
-              loading: false,
-              error: null
-            }));
+        if (token) {
+          const { data } = await api.get('/auth/verify', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (data.valid) {
+            const decoded = jwtDecode(token);
+            setUser(decoded);
           } else {
-            clearAuth();
+            logout();
           }
-        } else {
-          setAuthState(prev => ({ ...prev, loading: false }));
         }
-      } catch (error) {
-        console.error('Auth verification failed:', error);
-        clearAuth();
-        setAuthState(prev => ({
-          ...prev,
-          error: 'Session verification failed',
-          loading: false
-        }));
+      } catch (err) {
+        logout();
+        setError('Session expired. Please login again.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    verifyUserToken();
-  }, [authState.token]);
+    verifyToken();
+  }, [token]);
 
-  const clearAuth = () => {
-    localStorage.removeItem('token');
-    setAuthState({
-      user: null,
-      token: null,
-      loading: false,
-      error: null
-    });
-  };
-
+  // Login function
   const login = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      await loginWithGitHub();
-    } catch (error) {
-      setAuthState(prev => ({
-        ...prev,
-        error: 'Login failed',
-        loading: false
-      }));
+      window.location.href = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+    } catch (err) {
+      setError('Failed to initiate login');
+      setLoading(false);
+      throw err;
     }
   };
 
-  const handleGitHubCallback = async (token) => {
+  // Handle OAuth callback
+  const handleCallback = async (token) => {
     try {
       localStorage.setItem('token', token);
-      setAuthState(prev => ({
-        ...prev,
-        token,
-        loading: false,
-        error: null
-      }));
+      setToken(token);
+      const decoded = jwtDecode(token);
+      setUser(decoded);
       navigate('/dashboard');
-    } catch (error) {
-      console.error('Auth callback failed:', error);
-      clearAuth();
+    } catch (err) {
+      setError('Authentication failed');
+      logout();
+      throw err;
     }
   };
 
+  // Logout function
   const logout = async () => {
     try {
-      setAuthState(prev => ({ ...prev, loading: true }));
-      await apiLogout();
-      clearAuth();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setAuthState(prev => ({
-        ...prev,
-        error: 'Logout failed',
-        loading: false
-      }));
+      await api.post('/auth/logout');
+    } finally {
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      navigate('/login');
     }
+  };
+
+  // Provider value
+  const value = {
+    user,
+    token,
+    loading,
+    error,
+    login,
+    logout,
+    handleGitHubCallback: handleCallback
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        ...authState,
-        login,
-        logout,
-        handleGitHubCallback
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// 3. Create Custom Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
