@@ -40,24 +40,46 @@ export const AuthProvider = ({ children }) => {
   const login = async () => {
     setLoading(true);
     setError(null);
-    window.location.href = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+    try {
+      // Redirect to backend GitHub OAuth endpoint
+      window.location.href = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+    } catch (err) {
+      setLoading(false);
+      setError('Failed to initiate login');
+      throw err;
+    }
   };
 
   const handleCallback = async (token) => {
-    localStorage.setItem('token', token);
-    setToken(token);
-    const decoded = jwtDecode(token);
-    setUser(decoded);
+    try {
+      localStorage.setItem('token', token);
+      setToken(token);
+      const decoded = jwtDecode(token);
+      setUser(decoded);
+      return decoded; // Return user data for optional use
+    } catch (err) {
+      await logout();
+      setError('Failed to process authentication');
+      throw err;
+    }
   };
 
   const logout = async () => {
     try {
       await api.post('/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
     } finally {
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
+      setError(null);
     }
+  };
+
+  // Check if user has specific role (useful for nurse/admin permissions)
+  const hasRole = (role) => {
+    return user?.roles?.includes(role);
   };
 
   const value = {
@@ -67,10 +89,21 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
-    handleGitHubCallback: handleCallback
+    handleCallback,
+    hasRole
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
