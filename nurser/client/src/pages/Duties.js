@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { 
+  useQuery,
+  useQueryClient,
+  useMutation
+} from '@tanstack/react-query';
 import { 
   Box, 
   Typography, 
@@ -18,9 +22,11 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  // DialogActions removed since it's unused
+  Add,
+  Edit,
+  Delete
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
 import { getDuties, deleteDuty } from '../services/duties';
 import DutyForm from '../components/duties/DutyForm';
 
@@ -34,11 +40,17 @@ const Duties = () => {
     severity: 'success'
   });
 
-  const { data: duties, isLoading, error } = useQuery('duties', getDuties);
+  // Fetch duties
+  const { data: duties, isLoading, error } = useQuery({
+    queryKey: ['duties'],
+    queryFn: getDuties
+  });
 
-  const deleteMutation = useMutation(deleteDuty, {
+  // Delete duty mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteDuty,
     onSuccess: () => {
-      queryClient.invalidateQueries('duties');
+      queryClient.invalidateQueries(['duties']);
       setSnackbar({
         open: true,
         message: 'Duty deleted successfully',
@@ -71,7 +83,7 @@ const Duties = () => {
   };
 
   const handleSuccess = () => {
-    queryClient.invalidateQueries('duties');
+    queryClient.invalidateQueries(['duties']);
     setOpenForm(false);
     setSelectedDuty(null);
     setSnackbar({
@@ -90,44 +102,34 @@ const Duties = () => {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Nurse Duties</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<Add />}
-          onClick={() => setOpenForm(true)}
-        >
-          Add Duty
-        </Button>
-      </Box>
-
-      <TableContainer component={Paper}>
+      {/* DutyForm dialog/component */}
+      <DutyForm
+        open={openForm}
+        duty={selectedDuty}
+        onClose={handleCloseForm}
+        onSuccess={handleSuccess}
+      />
+      {/* Duties Table */}
+      <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Nurse</TableCell>
-              <TableCell>Patient</TableCell>
-              <TableCell>Shift</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {duties.map((duty) => (
-              <TableRow key={duty._id}>
-                <TableCell>{duty.nurse?.displayName || 'Unknown'}</TableCell>
-                <TableCell>{duty.patient?.name || 'Unknown'}</TableCell>
-                <TableCell>
-                  {duty.shift?.name} ({new Date(duty.shift?.startTime).toLocaleTimeString()})
-                </TableCell>
-                <TableCell>{duty.status}</TableCell>
-                <TableCell>
-                  <IconButton onClick={() => handleEdit(duty)}>
-                    <Edit color="primary" />
+            {duties && duties.map((duty) => (
+              <TableRow key={duty.id}>
+                <TableCell>{duty.name}</TableCell>
+                <TableCell>{duty.description}</TableCell>
+                <TableCell align="right">
+                  <IconButton color="primary" onClick={() => handleEdit(duty)}>
+                    <Edit />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(duty._id)}>
-                    <Delete color="error" />
+                  <IconButton color="error" onClick={() => handleDelete(duty.id)}>
+                    <Delete />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -135,24 +137,13 @@ const Duties = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
-        <DialogTitle>{selectedDuty ? 'Edit Duty' : 'Add New Duty'}</DialogTitle>
-        <DialogContent>
-          <DutyForm 
-            duty={selectedDuty} 
-            onSuccess={handleSuccess} 
-            onCancel={handleCloseForm}
-          />
-        </DialogContent>
-      </Dialog>
-
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
