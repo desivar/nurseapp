@@ -24,6 +24,10 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Define the base URL for the backend API for internal use (Swagger, GitHub callback)
+// This should match how your routes are mounted, typically including the /api prefix.
+const BACKEND_API_URL = `http://localhost:${process.env.PORT || 5500}/api`;
+
 // Swagger setup
 const options = {
   definition: {
@@ -35,7 +39,7 @@ const options = {
     },
     servers: [
       {
-        url: process.env.API_BASE_URL,
+        url: BACKEND_API_URL, // Use the internally constructed backend API URL
       },
     ],
   },
@@ -49,7 +53,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${process.env.API_BASE_URL}/auth/github/callback`
+    // Use the specific GITHUB_CALLBACK_URL from your .env for this
+    callbackURL: process.env.GITHUB_CALLBACK_URL
   },
   function(accessToken, refreshToken, profile, done) {
     // Here you would typically find or create a user in your database
@@ -65,11 +70,12 @@ passport.deserializeUser((obj, done) => {
   done(null, obj);
 });
 
-// Routes
+// Routes - ENSURE these files exist in ./routes/
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/duties', require('./routes/duties'));
-app.use('/api/shifts', require('./routes/shifts'));
-app.use('/api/patients', require('./routes/patients'));
+app.use('/api/shifts', require('./routes/shifts')); // Make sure server/routes/shifts.js exists
+app.use('/api/patients', require('./routes/patients')); // Make sure server/routes/patients.js exists
+// If you have more routes (e.g., users, nurses), ensure they are also included and their files exist.
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URL)
@@ -80,5 +86,6 @@ mongoose.connect(process.env.MONGODB_URL)
 const PORT = process.env.PORT || 5500
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`API docs available at ${process.env.API_BASE_URL}/api-docs`);
+  // Use the constructed URL for the API docs link
+  console.log(`API docs available at http://localhost:${PORT}/api-docs`);
 });
