@@ -41,12 +41,19 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      // Redirect to backend GitHub OAuth endpoint
-      window.location.href = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+      // Verify environment variable exists
+      if (!process.env.REACT_APP_API_BASE_URL) {
+        throw new Error('API base URL is not configured in environment variables');
+      }
+      
+      const authUrl = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+      console.log('Attempting redirect to:', authUrl);
+      
+      window.location.href = authUrl;
     } catch (err) {
       setLoading(false);
-      setError('Failed to initiate login');
-      throw err;
+      setError(err.message || 'Failed to initiate login');
+      console.error('Login error:', err);
     }
   };
 
@@ -56,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       setToken(token);
       const decoded = jwtDecode(token);
       setUser(decoded);
-      return decoded; // Return user data for optional use
+      return decoded;
     } catch (err) {
       await logout();
       setError('Failed to process authentication');
@@ -77,7 +84,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check if user has specific role (useful for nurse/admin permissions)
   const hasRole = (role) => {
     return user?.roles?.includes(role);
   };
