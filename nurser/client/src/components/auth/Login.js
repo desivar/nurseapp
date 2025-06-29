@@ -8,20 +8,17 @@ import {
 } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { login, loading, error } = useAuth();
   const [localError, setLocalError] = useState(null);
-  const navigate = useNavigate();
 
   const handleLogin = async () => {
     setLocalError(null);
     try {
-      await login();
-      // Optional: Add any post-login logic here
+      await login(); // This should trigger the GitHub OAuth flow
     } catch (err) {
-      setLocalError(err.message || 'Login failed. Please try again.');
+      setLocalError(err.message || 'Failed to initiate GitHub login');
     }
   };
 
@@ -58,11 +55,15 @@ const Login = () => {
           mt: 2,
           px: 4,
           py: 1.5,
-          fontSize: '1rem'
+          fontSize: '1rem',
+          backgroundColor: '#24292e',
+          '&:hover': {
+            backgroundColor: '#2c3136'
+          }
         }}
         disabled={loading}
       >
-        {loading ? 'Authenticating...' : 'Continue with GitHub'}
+        {loading ? 'Redirecting to GitHub...' : 'Continue with GitHub'}
       </Button>
 
       <Typography variant="body2" color="text.secondary" mt={4}>
