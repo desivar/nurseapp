@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Box, 
   Typography, 
