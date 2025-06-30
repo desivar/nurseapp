@@ -71,6 +71,7 @@ passport.deserializeUser((obj, done) => {
 });
 
 // Routes - ENSURE these files exist in ./routes/
+console.log('--- Setting up /api/auth route ---');
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/duties', require('./routes/duties'));
 app.use('/api/shifts', require('./routes/shifts')); // Make sure server/routes/shifts.js exists
