@@ -1,27 +1,31 @@
-import React from 'react'; // Import React for consistency, though not strictly necessary for this component
+import React from 'react'; // React is still used, no need for useEffect here
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { user, loading, logout } = useAuth(); // Destructure 'logout' as well
+  const { user, loading } = useAuth(); // We only need 'user' and 'loading' here
 
+  // 1. Show loading state:
   if (loading) {
-    // Show a loading spinner or message while authentication is in progress
-    return <div>Loading authentication...</div>;
+    // While AuthContext is determining if there's a valid user, show a loading message.
+    return <div>Loading authentication...</div>; // Or a loading spinner component
   }
 
-  // If loading is false, but there's no user (meaning token was invalid/expired or missing)
+  // 2. If not loading AND no user:
   if (!user) {
-    // Automatically perform a client-side logout to clear any lingering invalid token
-    // This part should be safe as logout is memoized with useCallback
-    // and setError is handled by AuthContext
-    logout(); // Call logout to ensure localStorage is clean and user is null
-
-    // Redirect to the home page or login page
-    return <Navigate to="/" replace />; // Consider redirecting to /login for clarity
+    // This means the AuthContext has finished loading and determined there's no authenticated user.
+    // The AuthContext's interceptor or initial verification logic would have already:
+    // a) Cleared any invalid token from localStorage.
+    // b) Set the 'user' state to null.
+    // c) Called navigate('/') to redirect the user to the home/login page.
+    // So, this `Maps` component here serves as an immediate visual redirect
+    // in the render tree for this specific path. It's a fallback to ensure navigation
+    // if for any reason the AuthContext's navigation took a moment longer to apply.
+    return <Navigate to="/" replace />;
   }
 
-  // If loading is false and there's a user, render the children (the protected page)
+  // 3. If not loading AND there is a user:
+  // Render the children (the protected content for the authenticated user).
   return children;
 };
 
