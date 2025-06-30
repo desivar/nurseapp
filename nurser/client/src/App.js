@@ -38,8 +38,9 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
+        {/* CORRECTED ORDER: Router must be the parent of AuthProvider */}
+        <Router>
+          <AuthProvider>
             <div style={{ display: 'flex' }}>
               <Navbar />
               <Sidebar />
@@ -57,8 +58,8 @@ function App() {
                 </Routes>
               </div>
             </div>
-          </Router>
-        </AuthProvider>
+          </AuthProvider>
+        </Router>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ThemeProvider>
