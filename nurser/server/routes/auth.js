@@ -57,7 +57,7 @@ router.get('/github', passport.authenticate('github', { scope: ['user:email'] })
  * 401:
  * description: Unauthorized
  */
-router.get('/github/callback',
+router.get('/github/callback', 
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     const token = jwt.sign(
@@ -126,4 +126,4 @@ router.post('/logout', (req, res) => {
   res.status(200).json({ message: 'Successfully logged out' });
 });
 
-module.exports = router; // This line should remain at the very end of your file
+module.exports = router;
