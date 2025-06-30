@@ -13,51 +13,67 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   const logout = useCallback(async () => {
+    console.log("AuthContext: Initiating logout..."); // ADD THIS
     try {
       // await api.post('/auth/logout'); // Keep this commented for now if not implemented on backend
-      console.log("Logging out...");
+      console.log("AuthContext: Logout API call (if enabled) finished."); // ADD THIS
     } catch (err) {
-      console.error('Error during logout attempt (e.g., network issue to /auth/logout):', err);
-      // Even if there's an error calling the logout API, we still want to clear client-side state
-    } finally { // This finally is correctly placed for the async operation in try, or just for cleanup
+      console.error('AuthContext: Error during logout attempt:', err); // ADD THIS
+    } finally {
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
       setError(null);
-      navigate('/'); // Redirect to home/login after logout
+      console.log("AuthContext: Cleared local storage and state. Navigating to /"); // ADD THIS
+      navigate('/');
     }
   }, [setToken, setUser, setError, navigate]);
 
   // Verify token on initial load
   useEffect(() => {
+    console.log("AuthContext useEffect (verifyToken): Running. Current token:", token); // ADD THIS
     const verifyToken = async () => {
       try {
         if (token) {
+          console.log("AuthContext: Token exists, attempting /auth/verify..."); // ADD THIS
           const { data } = await api.get('/auth/verify'); // api.js interceptor handles headers
           if (data.valid) {
             const decoded = jwtDecode(token);
             setUser(decoded);
+            console.log("AuthContext: Token verified, user set:", decoded); // ADD THIS
           } else {
+            console.log("AuthContext: Token verification failed (data.valid is false). Logging out."); // ADD THIS
             await logout();
           }
+        } else {
+          console.log("AuthContext: No token found on initial load or after logout. Setting user to null."); // ADD THIS
+          setUser(null); // Ensure user is null if no token
         }
       } catch (err) {
-        console.error('Token verification failed:', err);
-        // Specifically check for Axios errors for 401/403.
-        // The interceptor below also handles this, but a direct catch here is good for initial load.
+        console.error('AuthContext: Token verification failed in useEffect catch:', err); // ADD THIS
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-             setError('Session expired. Please log in again.');
+          setError('Session expired. Please log in again.');
+          console.log("AuthContext: 401/403 error caught in useEffect. Logging out."); // ADD THIS
         } else {
-             setError('Could not verify session. Please try again.');
+          setError('Could not verify session. Please try again.');
+          console.log("AuthContext: Other error caught in useEffect. Logging out."); // ADD THIS
         }
         await logout();
       } finally {
         setLoading(false);
+        console.log("AuthContext: verifyToken function finished. Loading set to false."); // ADD THIS
       }
     };
 
-    verifyToken();
-  }, [token, logout, setError, setLoading, setUser]);
+    // Delay verification slightly if token just came from handleCallback.
+    // This is a common pattern to avoid race conditions.
+    // We only want to run this initial verification if the token isn't actively being processed
+    // by handleCallback, or if it's already in localStorage on a page load/refresh.
+    // Let's rely on the token state itself.
+    verifyToken(); // Keep this simple for now, the AuthCallback awaits handleCallback.
+                   // The crucial part is what happens on page refresh/direct access.
+
+  }, [token, logout, setError, setLoading, setUser]); // Dependencies are correct
 
   // Axios Response Interceptor for global error handling (401/403)
   useEffect(() => {
@@ -65,14 +81,12 @@ export const AuthProvider = ({ children }) => {
       (response) => response,
       async (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          console.warn('Authentication error (401/403) detected by interceptor. Logging out...');
-          // Make sure logout clears the token BEFORE navigate, to prevent loop
-          localStorage.removeItem('token'); // Ensure token is gone immediately
+          console.warn('AuthContext Interceptor: Authentication error (401/403) detected. Logging out...'); // ADD THIS
+          localStorage.removeItem('token');
           setToken(null);
           setUser(null);
           setError('Session expired. Please log in again.');
-          navigate('/'); // Redirect to home/login
-          // Prevent further propagation of this specific error to react-query or calling components
+          navigate('/');
           return Promise.reject(new Error('Authentication failed. Redirected to login.'));
         }
         return Promise.reject(error);
@@ -82,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       api.interceptors.response.eject(interceptor);
     };
-  }, [logout, navigate, setToken, setUser, setError]); // Add all state setters to dependencies
+  }, [logout, navigate, setToken, setUser, setError]);
 
   const login = async () => {
     setLoading(true);
@@ -92,27 +106,31 @@ export const AuthProvider = ({ children }) => {
         throw new Error('API base URL is not configured in environment variables');
       }
       const authUrl = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
-      console.log('Attempting redirect to:', authUrl);
+      console.log('AuthContext: Attempting redirect to GitHub:', authUrl); // ADD THIS
       window.location.href = authUrl;
     } catch (err) {
       setLoading(false);
       setError(err.message || 'Failed to initiate login');
-      console.error('Login error:', err);
+      console.error('AuthContext: Login initiation error:', err); // ADD THIS
     }
   };
 
-  const handleCallback = useCallback(async (tokenParam) => { // Renamed 'token' to 'tokenParam' to avoid conflict
+  const handleCallback = useCallback(async (tokenParam) => {
+    console.log("AuthContext: handleCallback received token. Processing..."); // ADD THIS
     try {
       localStorage.setItem('token', tokenParam);
-      setToken(tokenParam);
+      console.log("AuthContext: Token set in localStorage."); // ADD THIS
+      setToken(tokenParam); // Update state to trigger useEffect and subsequent renders
       const decoded = jwtDecode(tokenParam);
       setUser(decoded);
-      navigate('/dashboard');
+      console.log("AuthContext: Token decoded, user set from callback:", decoded); // ADD THIS
+      navigate('/dashboard'); // This navigate is now redundant if AuthCallback component handles it
+      console.log("AuthContext: Navigated to dashboard from handleCallback (if not handled by AuthCallback component)."); // ADD THIS
       return decoded;
     } catch (err) {
-      console.error('Error during handleCallback:', err);
+      console.error('AuthContext: Error during handleCallback processing:', err); // ADD THIS
       setError('Failed to process authentication callback.');
-      await logout(); // Ensure logout if callback fails
+      await logout();
       throw err;
     }
   }, [setToken, setUser, logout, setError, navigate]);
