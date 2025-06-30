@@ -126,4 +126,4 @@ router.post('/logout', (req, res) => {
   res.status(200).json({ message: 'Successfully logged out' });
 });
 
-module.exports = router;
+module.exports = router; // This line should remain at the very end of your file
