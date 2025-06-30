@@ -60,15 +60,31 @@ router.get('/github', passport.authenticate('github', { scope: ['user:email'] })
 router.get('/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    if (!req.user) return res.status(401).json({ message: 'User not found' });
+    // === START OF ADDED LOGGING ===
+    console.log('--- GitHub Callback Backend Hit ---');
+    console.log('req.user after Passport authentication:', req.user); // Should show GitHub profile data
+
+    if (!req.user) {
+      console.log('Error: User object is missing after GitHub authentication. Sending 401.');
+      return res.status(401).json({ message: 'User not found' });
+    }
+    // === END OF ADDED LOGGING ===
 
     const token = jwt.sign(
-      { userId: req.user.id, username: req.user.username },
+      { userId: req.user.id, username: req.user.username }, // Assuming req.user.id and req.user.username exist
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+    // === START OF ADDED LOGGING ===
+    console.log('Successfully generated JWT Token.');
+    // CAUTION: Do not log the full token in production logs! Just a snippet or confirmation.
+    console.log('Token snippet:', token ? token.substring(0, 30) + '...' : 'No token generated');
+    const redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}`;
+    console.log('Backend redirecting to frontend URL:', redirectUrl);
+    // === END OF ADDED LOGGING ===
+
+    res.redirect(redirectUrl);
   }
 );
 
