@@ -13,8 +13,6 @@ const verifyToken = (req, res, next) => {
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       console.error("JWT verification error:", err);
-      // If token is invalid or expired, clear it from client storage
-      // This part should ideally be handled by the frontend's AuthContext after receiving 403
       return res.status(403).json({ message: 'Invalid or expired token' }); // Forbidden
     }
     req.user = user; // Attach user payload from token
