@@ -1,4 +1,4 @@
-require('dotenv').config(); // Must be first line
+require('dotenv').config();
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
@@ -6,92 +6,129 @@ const Patient = require('./models/Patient');
 const Shift = require('./models/Shift');
 const Duty = require('./models/Duty');
 const bcrypt = require('bcryptjs');
+const validator = require('validator');
+
+// Configuration constants
+const DEFAULT_PASSWORD = 'TempPass123!'; // Should be changed after first login
+const INITIAL_DATA = {
+  users: [],
+  patients: [],
+  shifts: [],
+  duties: []
+};
 
 const initDB = async () => {
   try {
-    // Verify environment variables
-    if (!process.env.MONGODB_URL) {
-      throw new Error('MONGODB_URL is missing in .env file');
+    // Validate critical environment variables
+    const requiredEnvVars = [
+      'MONGODB_URL',
+      'DB_USER',
+      'DB_PASSWORD',
+      'JWT_SECRET',
+      'SESSION_SECRET'
+    ];
+
+    const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+    if (missingVars.length > 0) {
+      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
     }
-    if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
-      throw new Error('Database credentials are missing in .env file');
+
+    if (!validator.isURL(process.env.MONGODB_URL)) {
+      throw new Error('Invalid MongoDB URL format');
     }
 
     console.log('Connecting to MongoDB...');
     
-    // Connect with authentication
+    // Enhanced connection with timeout and retry
     await mongoose.connect(process.env.MONGODB_URL, {
       auth: {
         username: process.env.DB_USER,
         password: process.env.DB_PASSWORD
       },
-      authSource: 'admin'
+      authSource: 'admin',
+      connectTimeoutMS: 5000,
+      retryWrites: true,
+      retryReads: true
     });
     console.log('✓ Connected to MongoDB');
 
-    // Clear collections individually to avoid permission issues
+    // Clear existing data with collection checks
     console.log('Clearing existing data...');
-    await User.deleteMany({});
-    await Patient.deleteMany({});
-    await Shift.deleteMany({});
-    await Duty.deleteMany({});
-    console.log('✓ Database cleared');
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
 
-    // Create admin user
+    const clearOps = [
+      { name: 'User', collection: 'users' },
+      { name: 'Patient', collection: 'patients' },
+      { name: 'Shift', collection: 'shifts' },
+      { name: 'Duty', collection: 'duties' }
+    ].map(async ({ name, collection }) => {
+      if (collectionNames.includes(collection)) {
+        await mongoose.model(name).deleteMany({});
+        console.log(`✓ Cleared ${collection} collection`);
+      }
+    });
+
+    await Promise.all(clearOps);
+
+    // Create admin user with enhanced validation
     console.log('Creating admin user...');
-    const adminPassword = await bcrypt.hash('admin123', 12);
-    const admin = await User.create({
+    INITIAL_DATA.users.push(await User.create({
       username: 'admin',
       email: 'admin@hospital.com',
-      password: adminPassword,
+      password: await bcrypt.hash(DEFAULT_PASSWORD, 12),
       role: 'admin',
       firstName: 'Hospital',
       lastName: 'Admin',
-      licenseNumber: 'ADMIN-001'
-    });
+      licenseNumber: 'ADMIN-001',
+      isActive: true
+    }));
 
     // Create head nurse
     console.log('Creating head nurse...');
-    const headNursePassword = await bcrypt.hash('nurse123', 12);
-    const headNurse = await User.create({
+    INITIAL_DATA.users.push(await User.create({
       username: 'headnurse',
       email: 'head.nurse@hospital.com',
-      password: headNursePassword,
+      password: await bcrypt.hash(DEFAULT_PASSWORD, 12),
       role: 'head_nurse',
       firstName: 'Sarah',
       lastName: 'Johnson',
       licenseNumber: 'RN-1001',
-      specialization: 'ICU'
-    });
+      specialization: 'ICU',
+      isActive: true
+    }));
 
-    // Create regular nurses
+    // Create nursing staff
     console.log('Creating nursing staff...');
-    const nurses = await User.create([
+    const nurses = await User.insertMany([
       {
         username: 'nurse1',
         email: 'nurse1@hospital.com',
-        password: await bcrypt.hash('nurse123', 12),
+        password: await bcrypt.hash(DEFAULT_PASSWORD, 12),
         role: 'nurse',
         firstName: 'Emily',
         lastName: 'Davis',
         licenseNumber: 'RN-1002',
-        specialization: 'Pediatrics'
+        specialization: 'Pediatrics',
+        isActive: true
       },
       {
         username: 'nurse2',
         email: 'nurse2@hospital.com',
-        password: await bcrypt.hash('nurse123', 12),
+        password: await bcrypt.hash(DEFAULT_PASSWORD, 12),
         role: 'nurse',
         firstName: 'Michael',
         lastName: 'Brown',
         licenseNumber: 'RN-1003',
-        specialization: 'ER'
+        specialization: 'ER',
+        isActive: true
       }
     ]);
+    INITIAL_DATA.users.push(...nurses);
 
-    // Create patients
+    // Create patients with realistic medical data
     console.log('Creating patient records...');
-    const patients = await Patient.create([
+    const patients = await Patient.insertMany([
       {
         firstName: 'John',
         lastName: 'Smith',
@@ -99,9 +136,15 @@ const initDB = async () => {
         gender: 'male',
         medicalRecordNumber: 'MRN-1001',
         roomNumber: '101A',
-        primaryDiagnosis: 'Pneumonia',
-        allergies: [{ name: 'Penicillin', severity: 'severe' }],
-        status: 'admitted'
+        primaryDiagnosis: 'Community-acquired pneumonia',
+        secondaryDiagnoses: ['Hypertension', 'Type 2 Diabetes'],
+        allergies: [{
+          name: 'Penicillin',
+          severity: 'severe',
+          reaction: 'Anaphylaxis'
+        }],
+        status: 'admitted',
+        admissionDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
       },
       {
         firstName: 'Mary',
@@ -110,66 +153,77 @@ const initDB = async () => {
         gender: 'female',
         medicalRecordNumber: 'MRN-1002',
         roomNumber: '205B',
-        primaryDiagnosis: 'Fractured femur',
+        primaryDiagnosis: 'Femur fracture (right)',
         medications: [
           {
             name: 'Acetaminophen',
             dosage: '500mg',
             frequency: 'Every 6 hours',
             route: 'oral',
-            prescribedBy: 'Dr. Anderson'
+            prescribedBy: 'Dr. Anderson',
+            startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
           }
         ],
-        status: 'admitted'
+        status: 'admitted',
+        admissionDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
       }
     ]);
+    INITIAL_DATA.patients.push(...patients);
 
-    // Create shifts
+    // Create shifts with realistic time ranges
     console.log('Creating shift schedules...');
     const now = new Date();
-    const shifts = await Shift.create([
+    const shifts = await Shift.insertMany([
       {
         name: 'Morning Shift',
-        description: '7am to 3pm shift',
+        description: '7am to 3pm nursing shift',
         startTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0),
         endTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 0, 0),
         requiredStaff: 2,
         assignedNurses: [nurses[0]._id, nurses[1]._id],
         ward: 'Pediatrics',
-        status: 'scheduled'
+        status: 'scheduled',
+        createdBy: INITIAL_DATA.users[0]._id // Admin created
       },
       {
         name: 'Night Shift',
-        description: '11pm to 7am shift',
+        description: '11pm to 7am emergency coverage',
         startTime: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0),
         endTime: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 7, 0, 0),
         requiredStaff: 1,
         assignedNurses: [nurses[1]._id],
         ward: 'ER',
-        status: 'scheduled'
+        status: 'scheduled',
+        createdBy: INITIAL_DATA.users[1]._id // Head nurse created
       }
     ]);
+    INITIAL_DATA.shifts.push(...shifts);
 
-    // Create duties
+    // Create duties with detailed tasks
     console.log('Assigning duties...');
-    await Duty.create([
+    const duties = await Duty.insertMany([
       {
         nurse: nurses[0]._id,
         patient: patients[0]._id,
         shift: shifts[0]._id,
         tasks: [
           {
-            description: 'Administer morning medication',
-            priority: 'high'
+            description: 'Administer morning medications',
+            priority: 'high',
+            notes: 'Check for penicillin allergy before administering antibiotics'
           },
           {
-            description: 'Check vitals',
+            description: 'Monitor vital signs',
+            priority: 'high',
+            notes: 'Watch for fever spikes'
+          },
+          {
+            description: 'Assist with morning hygiene',
             priority: 'medium'
           }
         ],
-        startTime: shifts[0].startTime,
-        endTime: shifts[0].endTime,
-        status: 'pending'
+        status: 'pending',
+        createdBy: INITIAL_DATA.users[0]._id
       },
       {
         nurse: nurses[1]._id,
@@ -177,25 +231,55 @@ const initDB = async () => {
         shift: shifts[0]._id,
         tasks: [
           {
-            description: 'Assist with physical therapy',
-            priority: 'medium'
+            description: 'Assist with physical therapy session',
+            priority: 'high',
+            notes: 'Patient has limited mobility on right side'
+          },
+          {
+            description: 'Monitor pain levels',
+            priority: 'medium',
+            notes: 'Medicate as needed per orders'
           }
         ],
-        startTime: shifts[0].startTime,
-        endTime: shifts[0].endTime,
-        status: 'pending'
+        status: 'pending',
+        createdBy: INITIAL_DATA.users[1]._id
       }
     ]);
+    INITIAL_DATA.duties.push(...duties);
 
+    // Success output
     console.log('\n✓ Database initialized successfully!');
-    console.log('Admin credentials:');
-    console.log(`Username: admin`);
-    console.log(`Password: admin123`);
+    console.log('====================================');
+    console.log('Initial Credentials (change immediately):');
+    console.log('Admin:');
+    console.log(`Username: admin / Password: ${DEFAULT_PASSWORD}`);
+    console.log('Head Nurse:');
+    console.log(`Username: headnurse / Password: ${DEFAULT_PASSWORD}`);
+    console.log('Regular Nurses:');
+    console.log(`Username: nurse1 / Password: ${DEFAULT_PASSWORD}`);
+    console.log(`Username: nurse2 / Password: ${DEFAULT_PASSWORD}`);
+    console.log('====================================');
+    
     process.exit(0);
   } catch (err) {
-    console.error('\n✗ Error initializing database:', err.message);
+    console.error('\n✗ Error initializing database:');
+    console.error(err.stack);
+    
+    // Attempt to clean up on failure
+    try {
+      await mongoose.connection.close();
+    } catch (e) {
+      console.error('Failed to close MongoDB connection:', e.message);
+    }
+    
     process.exit(1);
   }
 };
+
+// Handle promise rejections
+process.on('unhandledRejection', err => {
+  console.error('Unhandled rejection:', err.stack);
+  process.exit(1);
+});
 
 initDB();
