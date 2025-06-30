@@ -43,8 +43,11 @@ const verifyToken = (req, res, next) => {
  *       302:
  *         description: Redirect to GitHub for authentication
  */
-router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 
+router.get('/github', (req, res, next) => {
+  console.log('--- Backend /api/auth/github route hit! ---');
+  next(); // IMPORTANT: Pass control to the next middleware
+}, passport.authenticate('github', { scope: ['user:email'] }));
 /**
  * @swagger
  * /auth/github/callback:
