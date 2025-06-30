@@ -8,15 +8,15 @@ const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Extract token from "Bearer TOKEN"
 
-  if (token == null) return res.status(401).json({ message: 'No token provided' }); // No token
+  if (token == null) return res.status(401).json({ message: 'No token provided' });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       console.error("JWT verification error:", err);
-      return res.status(403).json({ message: 'Invalid or expired token' }); // Forbidden
+      return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    req.user = user; // Attach user payload from token
-    next(); // Proceed to the route handler
+    req.user = user;
+    next();
   });
 };
 
@@ -25,6 +25,12 @@ const verifyToken = (req, res, next) => {
  * tags:
  * name: Authentication
  * description: User authentication endpoints
+ * components:
+ * securitySchemes:
+ * bearerAuth:
+ * type: http
+ * scheme: bearer
+ * bearerFormat: JWT
  */
 
 /**
@@ -51,17 +57,14 @@ router.get('/github', passport.authenticate('github', { scope: ['user:email'] })
  * 401:
  * description: Unauthorized
  */
-router.get('/github/callback', 
+router.get('/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    // Successful authentication, generate JWT
     const token = jwt.sign(
       { userId: req.user.id, username: req.user.username },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-    
-    // Redirect to frontend with token
     res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
   }
 );
@@ -98,15 +101,13 @@ router.get('/github/callback',
  * description: Invalid or expired token
  */
 router.get('/verify', verifyToken, (req, res) => {
-  // If we reach here, the token has been verified by the middleware
-  // and req.user contains the decoded payload.
   res.status(200).json({ valid: true, user: req.user });
 });
 
 /**
  * @swagger
  * /auth/logout:
- * post: # Changed to POST as typically logout involves state change (e.g., revoking token)
+ * post:
  * summary: Logout user
  * tags: [Authentication]
  * responses:
@@ -121,10 +122,7 @@ router.get('/verify', verifyToken, (req, res) => {
  * type: string
  * example: Successfully logged out
  */
-router.post('/logout', (req, res) => { // Changed to router.post
-  // For JWT, actual "logout" on server side often means invalidating the token
-  // or simply letting it expire. Here, we're just confirming.
-  // The frontend handles clearing its local token.
+router.post('/logout', (req, res) => {
   res.status(200).json({ message: 'Successfully logged out' });
 });
 
