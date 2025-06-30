@@ -5,14 +5,14 @@ import { CircularProgress, Box } from '@mui/material';
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
-  const { handleGitHubCallback } = useAuth();
+  const { handleCallback } = useAuth();
 
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      handleGitHubCallback(token);
+      handleCallback(token);
     }
-  }, [searchParams, handleGitHubCallback]);
+  }, [searchParams, handleCallback]);
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
