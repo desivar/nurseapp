@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../services/api';
 
@@ -9,6 +10,24 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Memoize logout function to be used as a dependency in useCallback
+  // and in useEffect without causing re-render loops.
+  // This is a common pattern when a function defined within the component
+  // needs to be stable across renders.
+  const logout = useCallback(async () => {
+    try {
+      // Temporarily commented out to avoid 404 during current debugging
+      // await api.post('/auth/logout');
+    } catch (err) {
+      console.error('Logout error (ignored for now):', err);
+    } finally {
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      setError(null);
+    }
+  }, [setToken, setUser, setError]); // Dependencies for logout
 
   // Verify token on initial load
   useEffect(() => {
@@ -35,7 +54,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyToken();
-  }, [token]);
+  }, [token, logout, setError, setLoading, setUser]); // Add dependencies for verifyToken
 
   const login = async () => {
     setLoading(true);
@@ -57,7 +76,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleCallback = async (token) => {
+  const handleCallback = useCallback(async (token) => {
     try {
       localStorage.setItem('token', token);
       setToken(token);
@@ -69,20 +88,7 @@ export const AuthProvider = ({ children }) => {
       setError('Failed to process authentication');
       throw err;
     }
-  };
-
-  const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      localStorage.removeItem('token');
-      setToken(null);
-      setUser(null);
-      setError(null);
-    }
-  };
+  }, [setToken, setUser, logout, setError]); // Dependencies for handleCallback
 
   const hasRole = (role) => {
     return user?.roles?.includes(role);
@@ -94,7 +100,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
-    logout,
+    logout, // Ensure this refers to the useCallback-wrapped logout
     handleCallback,
     hasRole
   };
