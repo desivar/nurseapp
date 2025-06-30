@@ -7,6 +7,8 @@ export const loginWithGitHub = async () => {
 
 export const logout = async () => {
   try {
+    // This will now correctly use the Authorization: Bearer token from api.js interceptor
+    // and will be caught by the new AuthContext.js response interceptor if the token is expired.
     await api.get('/auth/logout');
     return true;
   } catch (error) {
@@ -17,9 +19,9 @@ export const logout = async () => {
 
 export const verifyToken = async (token) => {
   try {
-    const response = await api.get('/auth/verify', {
-      headers: { 'x-auth-token': token }
-    });
+    // The api.js interceptor will automatically add the Authorization: Bearer token
+    // so no need to specify headers here manually.
+    const response = await api.get('/auth/verify'); // Removed the headers option
     return response.data;
   } catch (error) {
     console.error('Token verification error:', error);
