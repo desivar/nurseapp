@@ -1,8 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const Duty = require('../models/Duty');
-const authMiddleware = require('../middleware/auth');
+import express from 'express';
 
+import Duty from '../models/Duty.js';
+import authMiddleware from '../middleware/auth.js';
+const router = express.Router();
 /**
  * @swagger
  * tags:
@@ -129,4 +129,5 @@ async function getDuty(req, res, next) {
   next();
 }
 
-module.exports = router;
+
+export default router;

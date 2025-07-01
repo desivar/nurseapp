@@ -1,9 +1,10 @@
-const express = require('express');
+import express from 'express';
+import Shift from '../models/Shift.js';
+import authMiddleware from '../middleware/auth.js';
+import { check, validationResult } from 'express-validator';
+import mongoose from 'mongoose';
+
 const router = express.Router();
-const Shift = require('../models/Shift');
-const authMiddleware = require('../middleware/auth');
-const { check, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
 
 /**
  * @swagger
@@ -193,4 +194,4 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
