@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: { type: String, select: false }, // For local auth
@@ -7,11 +9,14 @@ const userSchema = new mongoose.Schema({
   authMethod: { type: String, enum: ['local', 'github'], required: true }
 });
 
-// Add to bottom (if not exists):
+// Add toJSON method
 userSchema.methods.toJSON = function() {
   const user = this.toObject();
   delete user.password;
   return user;
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Create and export the model
+const User = mongoose.model('User', userSchema);
+
+export default User;  // ES module default export
