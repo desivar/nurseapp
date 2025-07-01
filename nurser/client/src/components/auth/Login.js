@@ -1,28 +1,45 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Replace with your actual GitHub auth flow
-      const response = await axios.get('/api/auth/github');
-      await login(response.data.token);
+      await login(email, password);
+      // Redirect to where user came from or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (err) {
-      setError('Login failed');
-      console.error(err);
+      setError('Invalid credentials');
     }
   };
 
   return (
-    <div>
-      <button onClick={handleSubmit}>Sign in with GitHub</button>
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      <button type="submit">Login</button>
       {error && <p>{error}</p>}
-    </div>
+    </form>
   );
 };
+
+export default Login;
