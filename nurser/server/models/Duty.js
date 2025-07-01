@@ -1,66 +1,108 @@
 // server/models/Duty.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const dutySchema = new mongoose.Schema({
-  nurse: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'A duty must be assigned to a nurse']
+const emsSchema = new mongoose.Schema({
+  // Incident details
+  incidentType: {
+    type: String,
+    enum: ['medical_emergency', 'trauma', 'interfacility_transfer', 'other'],
+    default: 'medical_emergency',
+    required: [true, 'An EMS record must have an incident type']
   },
+  incidentDateTime: {
+    type: Date,
+    default: Date.now,
+    required: [true, 'Incident must have a date and time']
+  },
+  location: {
+    type: String,
+    required: [true, 'Incident location is required']
+  },
+  // Patient details
   patient: {
-     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Patient',
-    required: [true, 'A duty must be assigned to a patient']
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Patient', // Assuming you have a Patient model
+    required: [true, 'An EMS record must be associated with a patient']
   },
+  // Personnel involved
+  responders: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // Assuming 'User' model includes paramedics, EMTs, etc.
+    required: [true, 'An EMS record must have at least one responder']
+  }],
+  // Shift (if relevant)
   shift: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Shift',
-    required: [true, 'A duty must be assigned to a shift']
+    ref: 'Shift', // Assuming you have a Shift model
   },
-   tasks: [{
+  // Actions/Interventions
+  interventions: [{
     description: {
       type: String,
-      required: [true, 'Task must have a description']
+      required: [true, 'Intervention must have a description']
     },
-    isCompleted: {
-      type: Boolean,
-      default: false
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     },
-    completedAt: Date,
+    dateTime: {
+      type: Date,
+      default: Date.now
+    },
+    outcome: String,
     notes: String,
     priority: {
       type: String,
-      enum: ['low', 'medium', 'high', 'critical'],
-      default: 'medium'
+      enum: ['routine', 'urgent', 'critical'],
+      default: 'urgent'
     }
   }],
-   status: {
+  // Status of the EMS incident
+  status: {
     type: String,
-    enum: ['pending', 'in_progress', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['dispatched', 'en_route', 'on_scene', 'transporting', 'at_hospital', 'completed', 'cancelled'],
+    default: 'dispatched'
   },
-  startTime: {
-    type: Date,
-    required: [true, 'Duty must have a start time']
+  // Times for tracking incident phases
+  dispatchTime: Date,
+  enRouteTime: Date,
+  onSceneTime: Date,
+  transportStartTime: Date,
+  atHospitalTime: Date,
+  completedTime: Date,
+  // Outcome of the incident
+  outcome: {
+    type: String,
+    enum: ['transported', 'treated_on_scene', 'refused_care', 'no_patient_found', 'other'],
+    required: [true, 'Outcome of the EMS incident is required']
   },
-   updatedAt: Date
+  notes: String, // General notes about the incident
+  updatedAt: Date
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
-});// Add duration virtual property
-dutySchema.virtual('duration').get(function() {
-  return (this.endTime - this.startTime) / (1000 * 60 * 60); // Hours
 });
+
+// Virtual property for total incident duration
+emsSchema.virtual('incidentDuration').get(function() {
+  if (this.incidentDateTime && this.completedTime) {
+    return (this.completedTime - this.incidentDateTime) / (1000 * 60); // Duration in minutes
+  }
+  return null;
+});
+
 // Update timestamp before saving
-dutySchema.pre('save', function(next) {
+emsSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('Duty', dutySchema);
 /*******************************
- *         INDEXES             *
+ * INDEXES             *
  *******************************/
-dutySchema.index({ nurse: 1, status: 1 });
-dutySchema.index({ patient: 1 });
-dutySchema.index({ shift: 1 });
+emsSchema.index({ incidentType: 1, status: 1 });
+emsSchema.index({ patient: 1 });
+emsSchema.index({ 'responders': 1 });
+emsSchema.index({ incidentDateTime: -1 });
+
+export default mongoose.model('EMS', emsSchema);
