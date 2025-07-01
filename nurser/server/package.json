@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js",
-  "dev": "nodemon index.js",
-  "seed": "node ./database/seed.js",
-  "test": "NODE_OPTIONS='--experimental-vm-modules' vitest"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node ./database/seed.js",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' vitest"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1",
     "nodemon": "^3.1.0",
