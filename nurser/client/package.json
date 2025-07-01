@@ -16,20 +16,20 @@
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "devtools": "^8.42.0",
-    
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
+    "react-app-rewired": "^2.2.1",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
-"scripts": {
-  "start": "set PORT=3000 && react-app-rewired start",
-  "build": "react-app-rewired build",
-  "test": "react-app-rewired test",
-  "eject": "react-scripts eject"
-},
+  "scripts": {
+    "start": "set PORT=3000 && react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-scripts eject"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
