@@ -14,6 +14,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.10.0",
+    "crypto-browserify": "^3.12.1",
     "date-fns": "^4.1.0",
     "devtools": "^8.42.0",
     "jwt-decode": "^4.0.0",
