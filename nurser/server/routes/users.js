@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import User from '../models/User.js';
+import authMiddleware from '../middleware/auth.js';
+
 const router = express.Router();
-const User = require('../models/User');
-const authMiddleware = require('../middleware/auth');
 
 /**
  * @swagger
@@ -30,4 +31,4 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
