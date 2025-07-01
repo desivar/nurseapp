@@ -282,7 +282,7 @@ router.patch('/:id/assign', authMiddleware, async (req, res) => {
 
     // Validate nurse IDs
     const { nurseIds } = req.body;
-    if (!Array.isArray(nurseIds) {
+    if (!Array.isArray(nurseIds)) {
       return res.status(400).json({ message: 'nurseIds must be an array' });
     }
 
