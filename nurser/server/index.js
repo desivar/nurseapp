@@ -1,15 +1,14 @@
-import * as dotenv from 'dotenv';
-dotenv.default.config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const session = require('express-session');
-const passport = require('passport');
-const GitHubStrategy = require('passport-github2').Strategy;
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import session from 'express-session';
+import passport from 'passport';
+import { Strategy as GitHubStrategy } from 'passport-github2';
 
 // Initialize Express app
 const app = express();
-
 // =============================================
 // 1. DATABASE CONNECTION
 // =============================================
