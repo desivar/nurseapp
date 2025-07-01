@@ -1,30 +1,21 @@
-import api from './api';
+import axios from './api'; // Your existing axios instance
 
-export const loginWithGitHub = async () => {
-  // This will redirect to the backend GitHub OAuth endpoint
-  window.location.href = `${process.env.REACT_APP_API_BASE_URL}/auth/github`;
+export const loginWithGitHub = () => {
+  window.location.href = 'http://localhost:5500/api/auth/github';
 };
 
-export const logout = async () => {
+export const handleGitHubCallback = async (token) => {
   try {
-    // This will now correctly use the Authorization: Bearer token from api.js interceptor
-    // and will be caught by the new AuthContext.js response interceptor if the token is expired.
-    await api.get('/auth/logout');
-    return true;
-  } catch (error) {
-    console.error('Logout error:', error);
-    return false;
+    const response = await axios.get('/auth/me', {
+      headers: { 'x-auth-token': token }
+    });
+    return response.data; // { id, email, role }
+  } catch (err) {
+    console.error('Auth failed:', err);
+    throw err;
   }
 };
 
-export const verifyToken = async (token) => {
-  try {
-    // The api.js interceptor will automatically add the Authorization: Bearer token
-    // so no need to specify headers here manually.
-    const response = await api.get('/auth/verify'); // Removed the headers option
-    return response.data;
-  } catch (error) {
-    console.error('Token verification error:', error);
-    return null;
-  }
+export const logout = () => {
+  localStorage.removeItem('token');
 };
