@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
-import Sidebar from './components/layout/Sidebar';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Duties from './pages/Duties';
