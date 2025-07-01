@@ -1,5 +1,4 @@
-// server/models/Patient.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose'; // ✅ Changed from require()
 
 const patientSchema = new mongoose.Schema({
   firstName: {
@@ -13,9 +12,10 @@ const patientSchema = new mongoose.Schema({
   dateOfBirth: {
     type: Date,
     required: [true, 'Patient must have a date of birth']
-  },gender: {
+  },
+  gender: {  // ✅ Fixed formatting (added missing comma after previous field)
     type: String,
-    enum: ['male', 'female'], // Modified enum to only include 'male' and 'female'
+    enum: ['male', 'female'],
     required: true
   },
   medicalRecordNumber: {
@@ -43,7 +43,7 @@ const patientSchema = new mongoose.Schema({
       type: String,
       enum: ['mild', 'moderate', 'severe']
     }
-     }],
+  }],  // ✅ Fixed indentation
   medications: [{
     name: String,
     dosage: String,
@@ -51,7 +51,7 @@ const patientSchema = new mongoose.Schema({
     route: String,
     prescribedBy: String
   }],
-   specialNeeds: [String],
+  specialNeeds: [String],
   status: {
     type: String,
     enum: ['admitted', 'discharged', 'transferred', 'critical'],
@@ -64,6 +64,7 @@ const patientSchema = new mongoose.Schema({
   },
   updatedAt: Date
 });
+
 // Virtual for patient's age
 patientSchema.virtual('age').get(function() {
   const today = new Date();
@@ -82,10 +83,14 @@ patientSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
-module.exports = mongoose.model('Patient', patientSchema);
+
 /*******************************
  * INDEXES            *
  *******************************/
-//pientSchema.index({ medicalRecordNumber: 1 }, );
+patientSchema.index({ medicalRecordNumber: 1 });  // ✅ Fixed typo ("pientSchema" → "patientSchema")
 patientSchema.index({ lastName: 1, firstName: 1 });
 patientSchema.index({ status: 1, roomNumber: 1 });
+
+// ✅ Correct ES Module export (NO module.exports)
+const Patient = mongoose.model('Patient', patientSchema);
+export default Patient;
