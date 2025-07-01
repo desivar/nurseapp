@@ -16,8 +16,16 @@ import PrivateRoute from './components/auth/PrivateRoute';
 import Login from './components/auth/Login';
 import Logout from './components/auth/Logout';
 import AuthCallback from './components/auth/AuthCallback';
+import LoadingSpinner from './components/common/LoadingSpinner'; // Add this component
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const theme = createTheme({
   palette: {
@@ -38,7 +46,6 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        {/* CORRECTED ORDER: Router must be the parent of AuthProvider */}
         <Router>
           <AuthProvider>
             <div style={{ display: 'flex' }}>
@@ -50,11 +57,15 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/logout" element={<Logout />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                  <Route path="/duties" element={<PrivateRoute><Duties /></PrivateRoute>} />
-                  <Route path="/shifts" element={<PrivateRoute><Shifts /></PrivateRoute>} />
-                  <Route path="/patients" element={<PrivateRoute><Patients /></PrivateRoute>} />
-                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                  
+                  {/* Protected Routes */}
+                  <Route element={<PrivateRoute />}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/duties" element={<Duties />} />
+                    <Route path="/shifts" element={<Shifts />} />
+                    <Route path="/patients" element={<Patients />} />
+                    <Route path="/profile" element={<Profile />} />
+                  </Route>
                 </Routes>
               </div>
             </div>
