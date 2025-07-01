@@ -30,13 +30,17 @@ const router = express.Router();
  */
 router.get('/', authMiddleware, async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
     const duties = await Duty.find()
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
       .populate('nurse', 'username displayName')
       .populate('patient', 'name roomNumber')
       .populate('shift', 'name startTime endTime');
+      
     res.json(duties);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, 500, err.message);
   }
 });
 
@@ -64,8 +68,8 @@ router.get('/', authMiddleware, async (req, res) => {
  *       404:
  *         description: Duty not found
  */
-router.get('/:id', authMiddleware, getDuty, (req, res) => {
-  res.json(res.duty);
+router.delete('/:id', authMiddleware, getDuty, async (req, res) => {
+  // Delete logic here
 });
 
 /**
@@ -112,21 +116,19 @@ router.post('/', authMiddleware, async (req, res) => {
 
 // Middleware to get duty by ID
 async function getDuty(req, res, next) {
-  let duty;
   try {
-    duty = await Duty.findById(req.params.id)
+    const duty = await Duty.findById(req.params.id)
       .populate('nurse', 'username displayName')
       .populate('patient', 'name roomNumber')
       .populate('shift', 'name startTime endTime');
-    if (duty == null) {
-      return res.status(404).json({ message: 'Cannot find duty' });
-    }
+      
+    if (!duty) return handleError(res, 404, 'Duty not found');
+    
+    res.duty = duty;
+    next();
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    handleError(res, 500, err.message);
   }
-
-  res.duty = duty;
-  next();
 }
 
 
