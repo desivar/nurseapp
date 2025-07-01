@@ -1,5 +1,4 @@
-// server/models/Shift.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const shiftSchema = new mongoose.Schema({
   name: {
@@ -50,6 +49,7 @@ const shiftSchema = new mongoose.Schema({
 shiftSchema.virtual('duration').get(function() {
   return (this.endTime - this.startTime) / (1000 * 60 * 60); // Hours
 });
+
 // Check if shift has enough staff
 shiftSchema.virtual('isFullyStaffed').get(function() {
   return this.assignedNurses.length >= this.requiredStaff;
@@ -61,9 +61,12 @@ shiftSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Shift', shiftSchema);
 /*******************************
  *         INDEXES             *
  *******************************/
 shiftSchema.index({ startTime: 1, endTime: 1 });
 shiftSchema.index({ ward: 1, status: 1 });
+
+// Modern export
+const Shift = mongoose.model('Shift', shiftSchema);
+export default Shift;

@@ -1,4 +1,4 @@
-require('dotenv').config(); // Must be first line
+import('dotenv').config(); // Must be first line
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
