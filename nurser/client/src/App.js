@@ -49,7 +49,7 @@ function App() {
           <AuthProvider>
             <div style={{ display: 'flex' }}>
               <Navbar />
-              <Sidebar />
+            
               <div style={{ flexGrow: 1, padding: '24px', marginTop: '64px' }}>
                 <Routes>
                   <Route path="/" element={<Home />} />
