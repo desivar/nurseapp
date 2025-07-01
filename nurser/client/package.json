@@ -16,7 +16,7 @@
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "devtools": "^8.42.0",
-    "express": "^5.1.0",
+    
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
