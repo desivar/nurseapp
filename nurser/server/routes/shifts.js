@@ -1,4 +1,4 @@
-/const express = require('express');
+const express = require('express');
 const router = express.Router();
 const Shift = require('../models/Shift');
 const authMiddleware = require('../middleware/auth');
