@@ -1,12 +1,21 @@
+import { useEffect } from 'react';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Navigate, useLocation } from 'react-router-dom';
+import LoadingSpinner from '../common/LoadingSpinner';
 
-const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+const PrivateRoute = () => {
+  const { user, loading, verifyToken } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div>Loading...</div>;
-  return user ? children : <Navigate to="/login" state={{ from: location }} replace />;
+  useEffect(() => {
+    if (!user && !loading) {
+      verifyToken();
+    }
+  }, [user, loading, verifyToken]);
+
+  if (loading) return <LoadingSpinner fullScreen />;
+
+  return user ? <Outlet /> : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 export default PrivateRoute;
