@@ -19,10 +19,10 @@ const patientSchema = new mongoose.Schema({
     required: true
   },
   medicalRecordNumber: {
-    type: String,
-    unique: true,
-    required: [true, 'Patient must have a medical record number']
-  },
+  type: String,
+  unique: true, // ← Only definition needed
+  required: [true, 'Patient must have a medical record number']
+},
   roomNumber: {
     type: String,
     required: [true, 'Patient must be assigned a room']
@@ -87,9 +87,8 @@ patientSchema.pre('save', function(next) {
 /*******************************
  * INDEXES            *
  *******************************/
-patientSchema.index({ medicalRecordNumber: 1 });  // ✅ Fixed typo ("pientSchema" → "patientSchema")
-patientSchema.index({ lastName: 1, firstName: 1 });
-patientSchema.index({ status: 1, roomNumber: 1 });
+patientSchema.index({ lastName: 1, firstName: 1 }); // Full name search
+patientSchema.index({ status: 1, roomNumber: 1 }); // Status + location
 
 // ✅ Correct ES Module export (NO module.exports)
 const Patient = mongoose.model('Patient', patientSchema);
