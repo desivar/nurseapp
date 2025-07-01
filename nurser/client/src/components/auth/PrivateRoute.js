@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { user, loading, verifyToken } = useAuth();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    if (!user && !loading) {
-      verifyToken(); // Double-check auth state
-    }
-  }, [user, loading, verifyToken]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  if (loading) return <div>Loading...</div>;
-  return user ? children : <Navigate to="/login" replace />;
+  if (!user) {
+    // Pass current location to redirect back after login
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 };
 
 export default PrivateRoute;
