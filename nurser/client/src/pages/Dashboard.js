@@ -1,10 +1,17 @@
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { IconButton } from '@mui/material';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import EmailIcon from '@mui/icons-material/Email';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    activeNurses: 0,
+    currentPatients: 0,
+    todaysShifts: 0
+  });
   const [recentShifts, setRecentShifts] = useState([]);
 
   useEffect(() => {
@@ -30,17 +37,17 @@ export default function Dashboard() {
         <StatCard 
           icon="👩⚕️" 
           title="Active Nurses" 
-          value={stats?.activeNurses || 0} 
+          value={stats.activeNurses} 
         />
         <StatCard 
           icon="🛌" 
           title="Patients Today" 
-          value={stats?.currentPatients || 0} 
+          value={stats.currentPatients} 
         />
         <StatCard 
           icon="📅" 
           title="Shifts Today" 
-          value={stats?.todaysShifts || 0} 
+          value={stats.todaysShifts} 
         />
       </div>
 
@@ -50,13 +57,45 @@ export default function Dashboard() {
         <ShiftTable shifts={recentShifts} />
       </div>
 
-      {/* Footer */}
-      <DashboardFooter />
+      {/* Single Footer Section - Clean Implementation */}
+      <footer style={{
+        marginTop: '40px',
+        padding: '20px',
+        textAlign: 'center',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px',
+        boxShadow: '0 -2px 4px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ marginBottom: '12px' }}>
+          <IconButton 
+            href="https://wa.me/1234567890" 
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp"
+            size="small"
+          >
+            <WhatsAppIcon fontSize="small" />
+          </IconButton>
+          <IconButton 
+            href="mailto:contact@example.com"
+            aria-label="Email"
+            size="small"
+          >
+            <EmailIcon fontSize="small" />
+          </IconButton>
+        </div>
+        <p style={{ margin: '5px 0', color: '#6c757d' }}>
+          © {new Date().getFullYear()} Nurse Duty Manager • v1.0.0
+        </p>
+        <p style={{ margin: '5px 0', color: '#6c757d', fontSize: '0.9em' }}>
+          Last updated: {new Date().toLocaleString()}
+        </p>
+      </footer>
     </div>
   );
 }
 
-// Component: Stat Card
+// StatCard Component
 const StatCard = ({ icon, title, value }) => (
   <div className="stat-card">
     <span className="stat-icon">{icon}</span>
@@ -65,9 +104,32 @@ const StatCard = ({ icon, title, value }) => (
   </div>
 );
 
-// Component: Footer
-const DashboardFooter = () => (
-  <footer className="dashboard-footer">
-    <p>Last updated: {new Date().toLocaleString()}</p>
-    <div className="social-links">
-      <a href="https://wa.me/1234567890" target="_blank" rel="noreferrer"></a>
+// ShiftTable Component (simplified)
+const ShiftTable = ({ shifts }) => {
+  return (
+    <div className="shift-table">
+      {shifts.length > 0 ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Shift Type</th>
+              <th>Assigned Nurse</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shifts.map(shift => (
+              <tr key={shift._id}>
+                <td>{new Date(shift.date).toLocaleDateString()}</td>
+                <td>{shift.shiftType}</td>
+                <td>{shift.assignedNurse?.name || 'Unassigned'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>No shifts scheduled</p>
+      )}
+    </div>
+  );
+};
